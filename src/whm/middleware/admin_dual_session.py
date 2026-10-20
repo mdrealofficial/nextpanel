@@ -36,6 +36,9 @@ class SeparateAdminSessionMiddleware:
 
     def handle_admin_session_response(self, request, response):
         """Handle admin session cookie"""
+        if response is None:
+            return response
+
         admin_cookie_name = getattr(settings, 'ADMIN_SESSION_COOKIE_NAME', 'session_admin')
         
         if hasattr(request, 'admin_session') and request.admin_session.modified:

@@ -278,27 +278,25 @@ class CustomLoginView(LoginView):
         otp_code = self.request.POST.get("otp")
         username = form.cleaned_data.get("username")
         password = form.cleaned_data.get("password")
-        settings, _ = UserSettings.objects.get_or_create(userid=user.id)
-        if settings.two_step == 1 and not otp_code:
-            
-            
-    
-            return render(self.request, "users/otp.html", {
-            "username": username,
-            "password": password,
-            "need_otp": True
-            })
-            
-            
-        if settings.two_step == 1 and otp_code:
-            if not authenticator.verify_code(settings.secret, otp_code):
-                messages.error(self.request, "Invalid OTP code. Try again.")
+        try:
+            user_settings, _ = UserSettings.objects.get_or_create(userid=user.id)
+            if user_settings.two_step == 1 and not otp_code:
                 return render(self.request, "users/otp.html", {
                     "username": username,
                     "password": password,
                     "need_otp": True
-                })    
-            
+                })
+            if user_settings.two_step == 1 and otp_code:
+                if not authenticator.verify_code(user_settings.secret, otp_code):
+                    messages.error(self.request, "Invalid OTP code. Try again.")
+                    return render(self.request, "users/otp.html", {
+                        "username": username,
+                        "password": password,
+                        "need_otp": True
+                    })
+        except Exception:
+            pass
+
         user_data = get_user_data_by_id(user.id)
         whm = user_data.get('whm', 0)
 

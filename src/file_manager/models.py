@@ -18,5 +18,5 @@ class UserSettings(models.Model):
         db_table = 'user_settings'
 
     def __str__(self):
-        return self.name
+        return f"UserSettings {self.userid}"
 # Create your models here.
