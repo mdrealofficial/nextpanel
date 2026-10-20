@@ -1,0 +1,243 @@
+{% extends "whm/base.html" %}
+{% block title %}Apache Configuration{% endblock title %}
+{% block content %}
+
+<div id="alertContainer" class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;">
+    <div id="message"></div>
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">×</span>
+    </button>
+</div>
+
+<form method="post" action="">
+    {% csrf_token %}
+
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="card card-default">
+                <div class="card-header">
+                    <h2>Apache HTTP Server Configuration</h2>
+                </div>
+
+                <div class="card-body">
+
+                    <h4 class="mt-3">Server Settings</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="ServerRoot">Server Root</label>
+                        <input type="text" class="form-control" id="ServerRoot" name="ServerRoot" value="{{ current_settings.ServerRoot }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Listen">Listen Port</label>
+                        <input type="text" class="form-control" id="Listen" name="Listen" value="{{ current_settings.Listen }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="User">Apache User</label>
+                        <input type="text" class="form-control" id="User" name="User" value="{{ current_settings.User }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Group">Apache Group</label>
+                        <input type="text" class="form-control" id="Group" name="Group" value="{{ current_settings.Group }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ServerAdmin">Server Admin Email</label>
+                        <input type="text" class="form-control" id="ServerAdmin" name="ServerAdmin" value="{{ current_settings.ServerAdmin }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ServerName">Server Name</label>
+                        <input type="text" class="form-control" id="ServerName" name="ServerName" value="{{ current_settings.ServerName }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="DocumentRoot">Default Document Root</label>
+                        <input type="text" class="form-control" id="DocumentRoot" name="DocumentRoot" value="{{ current_settings.DocumentRoot }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="DirectoryIndex">Directory Index</label>
+                        <input type="text" class="form-control" id="DirectoryIndex" name="DirectoryIndex" value="{{ current_settings.DirectoryIndex }}">
+                    </div>
+
+                    <hr>
+                    <h4>Connection Settings</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="KeepAlive">Keep Alive</label>
+                        <select class="form-control" id="KeepAlive" name="KeepAlive">
+                            <option value="On" {% if current_settings.KeepAlive == 'On' %}selected{% endif %}>Enabled</option>
+                            <option value="Off" {% if current_settings.KeepAlive == 'Off' %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="MaxKeepAliveRequests">Max Keep Alive Requests</label>
+                        <input type="number" min="1" class="form-control" id="MaxKeepAliveRequests" name="MaxKeepAliveRequests" value="{{ current_settings.MaxKeepAliveRequests }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="KeepAliveTimeout">Keep Alive Timeout (seconds)</label>
+                        <input type="number" min="1" class="form-control" id="KeepAliveTimeout" name="KeepAliveTimeout" value="{{ current_settings.KeepAliveTimeout }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Timeout">Request Timeout (seconds)</label>
+                        <input type="number" min="1" class="form-control" id="Timeout" name="Timeout" value="{{ current_settings.Timeout }}">
+                    </div>
+
+                    <hr>
+                    <h4>Request Limits</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="LimitRequestFieldSize">Request Field Size</label>
+                        <input type="number" min="0" class="form-control" id="LimitRequestFieldSize" name="LimitRequestFieldSize" value="{{ current_settings.LimitRequestFieldSize }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="LimitRequestFields">Maximum Request Fields</label>
+                        <input type="number" min="0" class="form-control" id="LimitRequestFields" name="LimitRequestFields" value="{{ current_settings.LimitRequestFields }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="LimitRequestBody">Maximum Request Body (bytes; 0 = unlimited)</label>
+                        <input type="number" min="0" class="form-control" id="LimitRequestBody" name="LimitRequestBody" value="{{ current_settings.LimitRequestBody }}">
+                    </div>
+
+                    <hr>
+                    <h4>Performance</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="EnableSendfile">Enable Sendfile</label>
+                        <select class="form-control" id="EnableSendfile" name="EnableSendfile">
+                            <option value="on" {% if current_settings.EnableSendfile == 'on' %}selected{% endif %}>Enabled</option>
+                            <option value="off" {% if current_settings.EnableSendfile == 'off' %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="EnableMMAP">Enable Memory Mapping</label>
+                        <select class="form-control" id="EnableMMAP" name="EnableMMAP">
+                            <option value="on" {% if current_settings.EnableMMAP == 'on' %}selected{% endif %}>Enabled</option>
+                            <option value="off" {% if current_settings.EnableMMAP == 'off' %}selected{% endif %}>Disabled</option>
+                        </select>
+                    </div>
+
+                    <hr>
+                    <h4>Logging</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="ErrorLog">Error Log Path</label>
+                        <input type="text" class="form-control" id="ErrorLog" name="ErrorLog" value="{{ current_settings.ErrorLog }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="LogLevel">Log Level</label>
+                        <select class="form-control" id="LogLevel" name="LogLevel">
+                            {% for level in log_levels %}
+                            <option value="{{ level }}" {% if current_settings.LogLevel == level %}selected{% endif %}>{{ level }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <hr>
+                    <h4>Security</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="HostnameLookups">Hostname Lookups</label>
+                        <select class="form-control" id="HostnameLookups" name="HostnameLookups">
+                            <option value="Off" {% if current_settings.HostnameLookups == 'Off' %}selected{% endif %}>Disabled</option>
+                            <option value="On" {% if current_settings.HostnameLookups == 'On' %}selected{% endif %}>Enabled</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ServerTokens">Server Tokens</label>
+                        <select class="form-control" id="ServerTokens" name="ServerTokens">
+                            {% for token in server_tokens %}
+                            <option value="{{ token }}" {% if current_settings.ServerTokens == token %}selected{% endif %}>{{ token }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ServerSignature">Server Signature</label>
+                        <select class="form-control" id="ServerSignature" name="ServerSignature">
+                            <option value="Off" {% if current_settings.ServerSignature == 'Off' %}selected{% endif %}>Disabled</option>
+                            <option value="On" {% if current_settings.ServerSignature == 'On' %}selected{% endif %}>Enabled</option>
+                            <option value="EMail" {% if current_settings.ServerSignature == 'EMail' %}selected{% endif %}>Email</option>
+                        </select>
+                    </div>
+
+                    <hr>
+                    <h4>Apache Disk Cache</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="CacheRoot">Cache Root Directory</label>
+                        <input type="text" class="form-control" id="CacheRoot" name="CacheRoot" value="{{ current_settings.CacheRoot }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="CacheDirLevels">Cache Directory Levels</label>
+                        <input type="number" min="1" max="5" class="form-control" id="CacheDirLevels" name="CacheDirLevels" value="{{ current_settings.CacheDirLevels }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="CacheDirLength">Cache Directory Length</label>
+                        <input type="number" min="1" max="8" class="form-control" id="CacheDirLength" name="CacheDirLength" value="{{ current_settings.CacheDirLength }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="CacheMaxExpire">Maximum Cache Expiration (seconds)</label>
+                        <input type="number" min="1" class="form-control" id="CacheMaxExpire" name="CacheMaxExpire" value="{{ current_settings.CacheMaxExpire }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="apacheCacheEnabled">Apache Disk Cache</label>
+                        <label class="switch switch-primary form-control-label mr-2">
+                            <input type="checkbox" name="apacheCacheEnabled" id="apacheCacheEnabled" class="switch-input form-check-input" value="On"
+                                   {% if current_settings.apacheCacheEnabled == 'On' %}checked{% endif %}>
+                            <span class="switch-label"></span>
+                            <span class="switch-handle"></span>
+                        </label>
+                    </div>
+
+                    <hr>
+                    <h4>Browser Caching</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="browserCacheEnabled">Browser Cache Headers</label>
+                        <label class="switch switch-primary form-control-label mr-2">
+                            <input type="checkbox" name="browserCacheEnabled" id="browserCacheEnabled" class="switch-input form-check-input" value="On"
+                                   {% if current_settings.browserCacheEnabled == 'On' %}checked{% endif %}>
+                            <span class="switch-label"></span>
+                            <span class="switch-handle"></span>
+                        </label>
+                    </div>
+
+                    <hr>
+                    <h4>Compression</h4>
+  <hr>
+                    <div class="form-group">
+                        <label for="gzipEnabled">GZIP Compression</label>
+                        <label class="switch switch-primary form-control-label mr-2">
+                            <input type="checkbox" name="gzipEnabled" id="gzipEnabled" class="switch-input form-check-input" value="On"
+                                   {% if current_settings.gzipEnabled == 'On' %}checked{% endif %}>
+                            <span class="switch-label"></span>
+                            <span class="switch-handle"></span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">Save Settings</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% include "whm/footer.html" %}
+{% endblock content %}

@@ -1,0 +1,397 @@
+{% extends "whm/base.html" %}
+{% block title %}License Management{% endblock title %}
+{% block content %}
+<link id="main-css-href" rel="stylesheet" href="/media/css/license.css" />
+<div class="lm-page">
+
+    <!-- Page Header -->
+    <div class="lm-header">
+        <div>
+            <h4 class="lm-header-title">🔑 License Management</h4>
+            <p class="lm-header-subtitle">Manage your OLSPanel license key</p>
+        </div>
+        {% if license.key %}
+            {% if license.status == 'Active' %}
+                <span class="badge badge-success">✅ Active</span>
+            {% else %}
+                <span class="badge badge-danger">❌ Expired</span>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- ROW 1: License Details (full width) -->
+    <div class="lm-row">
+        <div class="card lm-card">
+
+            <div class="card-header">
+                <span class="card-header-label">License Details</span>
+            </div>
+
+            <div class="card-body">
+                <form method="post" action="">
+                    {% csrf_token %}
+
+                    <!-- License Key Field -->
+                    <div class="form-group">
+                        <label class="form-label">License Key</label>
+                        <div class="input-row">
+                            <div class="input-wrap">
+                                <span class="input-icon">🔐</span>
+                                <input
+                                    type="text"
+                                    id="license_key"
+                                    name="license_key"
+                                    value="{{ license.key }}"
+                                    placeholder="XXXXX-XXXXX-XXXXX-XXXXX"
+                                    {% if license.key %}disabled{% endif %}
+                                    required
+                                    class="input-field"
+                                >
+                            </div>
+                            {% if license.key %}
+                                <button type="button" id="changeLicense" class="btn-change">
+                                    ✏️ Change
+                                </button>
+                            {% endif %}
+                        </div>
+                        <p class="field-hint">Format: XXXXX-XXXXX-XXXXX-XXXXX</p>
+                    </div>
+
+                    <!-- License Info Grid -->
+                    {% if license.key %}
+                        <div class="info-panel">
+                            <p class="info-panel-label">License Information</p>
+                            <div class="info-grid">
+
+                                <div>
+                                    <div class="info-item-label">Status</div>
+                                    {% if license.status == 'Active' %}
+                                        <span class="status-pill active">Active</span>
+                                    {% else %}
+                                        <span class="status-pill expired">Expired</span>
+                                    {% endif %}
+                                </div>
+
+                                <div>
+                                    <div class="info-item-label">License Type</div>
+                                    <span class="key-pill">{{ license.type|default:"-" }}</span>
+                                </div>
+
+                                <div class="info-full">
+                                    <div class="info-item-label">License Key</div>
+                                    <code class="key-code">{{ license.key }}</code>
+                                </div>
+
+                                <div>
+                                    <div class="info-item-label">Registered IP</div>
+                                    <span class="info-item-value">{{ license.ip|default:"-" }}</span>
+                                </div>
+
+                                <div>
+                                    <div class="info-item-label">Expiry Date</div>
+                                    <span class="info-item-value{% if license.status != 'Active' %} expired{% endif %}">
+                                        {% if license.expire_date %}{{ license.expire_date|date:"d M Y" }}{% else %}-{% endif %}
+                                    </span>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        {% if license.status != 'Active' %}
+                            <div class="alert-box warning">
+                                <span class="alert-icon">⚠️</span>
+                                <div>Your license has <strong>expired</strong>. Please renew or enter a new license key to restore full access.</div>
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="alert-box info">
+                            <span class="alert-icon">ℹ️</span>
+                            <div>No active license found. Enter your license key above to activate.</div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Submit Button -->
+                    <button type="button" id="licenseBtn" onclick="lic()" class="submit-btn {% if license.key %}update{% else %}activate{% endif %}">
+                        <span id="btnText">
+                            {% if license.key %}🔄 Update License{% else %}✅ Activate License{% endif %}
+                        </span>
+                        <span id="btnLoader" class="btn-loader">
+                            <div class="spinner"></div>
+                        </span>
+                    </button>
+
+                </form>
+
+                <div id="alertContainer" class="alert alert-success alert-dismissible fade show mt-3 d-none" role="alert">
+                    <div id="message"></div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: Tip + Pricing (full width, stacked below License Details) -->
+    <div class="lm-row">
+
+        <!-- 💡 Free License Tip Card -->
+        <div class="tip-card">
+            <div class="tip-card-header">
+                <span>🔐</span>
+                <div class="tip-card-title">Why License Require</div>
+            </div>
+            <p class="tip-card-text">
+                A valid license key is required to activate <strong>unlock</strong> premium features, updates, and support.
+            </p>
+            <div class="tip-card-features">
+                ✔ Own Branding • ✔ Premium features • ✔ Fast support • ✔ Resource limits
+            </div>
+        </div>
+
+        <!-- Pricing plans (full page width) -->
+        <div class="pricing-section">
+            <div class="pricing-decor-1"></div>
+            <div class="pricing-decor-2"></div>
+
+            <div class="pricing-grid">
+
+                <!-- FREE PLAN -->
+                <div class="license-card dark">
+                    <div class="card-inner">
+                        <span class="badge-pill badge-popular">🎁 POPULAR</span>
+                        <h3 class="plan-title">Free License</h3>
+                        <div class="plan-price">$0</div>
+                        <p class="plan-duration">for 3 Months</p>
+                        <ul class="plan-features">
+                            <li>✓ Review required</li>
+                            <li>✓ Own branding</li>
+                            <li>✓ Premium features</li>
+                            <li>✓ Resource limits</li>
+                        </ul>
+                        <button type="button" class="plan-button free" onclick="showFreeInstructions()">
+                            🚀 Get Free
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 6 MONTH PLAN -->
+                <div class="license-card light">
+                    <h3 class="plan-title">6 Months</h3>
+                    <div class="plan-price">$6</div>
+                    <p class="plan-duration">for 6 Months</p>
+                    <ul class="plan-features">
+                        <li>✓ Payment required</li>
+                        <li>✓ Own branding</li>
+                        <li>✓ Premium features</li>
+                        <li>✓ Resource limits</li>
+                    </ul>
+                    <a href="https://cp.olspanel.com/licenses/checkout/2" target="_blank" class="plan-button paid">
+                        Buy Now
+                    </a>
+                </div>
+
+                <!-- 1 YEAR PLAN -->
+                <div class="license-card light">
+                    <h3 class="plan-title">1 Year</h3>
+                    <div class="plan-price">$10</div>
+                    <p class="plan-duration">for 12 Months</p>
+                    <ul class="plan-features">
+                        <li>✓ Payment required</li>
+                        <li>✓ Own branding</li>
+                        <li>✓ Premium features</li>
+                        <li>✓ Resource limits</li>
+                    </ul>
+                    <a href="https://cp.olspanel.com/licenses/checkout/3" target="_blank" class="plan-button paid">
+                        Buy Now
+                    </a>
+                </div>
+
+                <!-- CUSTOM PLAN -->
+                <div class="license-card light custom">
+                    <span class="badge-pill badge-custom">🛠️ CUSTOM</span>
+                    <h3 class="plan-title">Custom</h3>
+                    <div class="plan-price">Let's Talk</div>
+                    <p class="plan-duration">Tailored to your needs</p>
+                    <ul class="plan-features">
+                        <li>✓ Volume licensing</li>
+                        <li>✓ Dedicated support</li>
+                        <li>✓ Custom resource limits</li>
+                        <li>✓ SLA & onboarding help</li>
+                    </ul>
+                    <a href="https://olspanel.com/contact" target="_blank" class="plan-button custom">
+                        📩 Contact Sales
+                    </a>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ============ FREE LICENSE INSTRUCTIONS MODAL ============ -->
+<div id="freeInstructionsModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-decor"></div>
+
+        <div class="modal-inner">
+
+            <button type="button" onclick="closeFreeInstructions()" class="modal-close">✕</button>
+
+            <div class="modal-header">
+                <span class="modal-icon">🎁</span>
+                <div>
+                    <div class="modal-title">Get a Free License Key!</div>
+                    <div class="modal-subtitle">No credit card. No payment. Just share.</div>
+                </div>
+            </div>
+
+            <p class="modal-text">
+                You don't need to buy a license with money. Simply write a post or record a short video reviewing
+                <strong>OLSPanel</strong> and share it publicly — then submit your link to get a
+                <strong class="highlight">free license key</strong>!
+            </p>
+
+            <div class="modal-steps">
+
+                <div class="step-item">
+                    <span class="step-num">1</span>
+                    <span class="step-text">Write a review post <strong>or</strong> record a short video about OLSPanel</span>
+                </div>
+
+                <div class="step-item">
+                    <span class="step-num">2</span>
+                    <span class="step-text">Share it publicly on any platform (YouTube, Facebook, blog, forum, etc.)</span>
+                </div>
+
+                <div class="step-item">
+                    <span class="step-num">3</span>
+                    <span class="step-text">Go to <a href="https://cp.olspanel.com" target="_blank">cp.olspanel.com</a> and submit your share link</span>
+                </div>
+
+                <div class="step-item">
+                    <span class="step-num done">🎉</span>
+                    <span class="step-text">Receive your <strong class="highlight">free license key</strong> instantly!</span>
+                </div>
+
+            </div>
+
+            <a href="https://cp.olspanel.com/licenses/request" target="_blank" class="modal-cta">
+                Submit Your Review → Get Free License
+            </a>
+
+        </div>
+    </div>
+</div>
+
+
+<script>
+function showFreeInstructions() {
+    document.getElementById('freeInstructionsModal').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeFreeInstructions() {
+    document.getElementById('freeInstructionsModal').classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// close modal when clicking outside the card
+document.getElementById('freeInstructionsModal').addEventListener('click', function (e) {
+    if (e.target === this) closeFreeInstructions();
+});
+
+function lic() {
+
+    const btn = document.getElementById('licenseBtn');
+    const btnText = document.getElementById('btnText');
+    const loader = document.getElementById('btnLoader');
+
+    const alertBox = document.getElementById('alertContainer');
+    const message = document.getElementById('message');
+
+    const input = document.getElementById('license_key');
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+
+    // 🔥 START LOADING
+    btn.disabled = true;
+    btnText.style.display = "none";
+    loader.style.display = "inline-block";
+
+    fetch("{% url 'license_activate' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": csrfToken
+        },
+        body: new URLSearchParams({
+            license_key: input.value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        alertBox.classList.remove('d-none');
+
+        if (data.status === "success") {
+
+            alertBox.className = "alert alert-success mt-3";
+            message.innerHTML = `
+                ✅ License Activated<br>
+                Key: <b>${data.license_key}</b><br>
+                Expire: ${data.expires || '-'}
+            `;
+
+            // 🚀 AUTO REFRESH AFTER 5 SEC
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+
+        } else {
+
+            alertBox.className = "alert alert-danger mt-3";
+            message.innerText = data.message || "Failed to activate license";
+        }
+
+    })
+    .catch(err => {
+
+        alertBox.classList.remove('d-none');
+        alertBox.className = "alert alert-danger mt-3";
+        message.innerText = "Server error";
+    })
+    .finally(() => {
+
+        // 🔥 STOP LOADING
+        btn.disabled = false;
+        btnText.style.display = "inline-block";
+        loader.style.display = "none";
+    });
+}
+
+    const btn = document.getElementById('changeLicense');
+    if (btn) {
+        let changed = false;
+        btn.addEventListener('click', function () {
+            const input = document.getElementById('license_key');
+            if (!changed) {
+                input.removeAttribute('disabled');
+                input.focus();
+                input.select();
+                btn.textContent = '✖ Cancel';
+                btn.classList.add('editing');
+                changed = true;
+            } else {
+                input.setAttribute('disabled', true);
+                input.value = "{{ license.key }}";
+                btn.innerHTML = '✏️ Change';
+                btn.classList.remove('editing');
+                changed = false;
+            }
+        });
+    }
+</script>
+
+{% endblock content %}

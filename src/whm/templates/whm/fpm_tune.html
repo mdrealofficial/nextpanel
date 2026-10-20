@@ -1,0 +1,199 @@
+{% extends "whm/base.html" %}
+{% block title %}PHP Tuning{% endblock title %}
+{% block content %}
+
+<div class="row">
+    <div class="col-xs-12 col-sm-8 col-md-8 col-lg-8">
+        <div class="card card-default">
+            <div class="card-header">
+                <h2>PHP-FPM Configuration</h2>
+            </div>
+
+            <div class="card-body">
+                <form method="post" id="phpTuneForm">
+                    {% csrf_token %}
+
+                    <div class="form-group">
+                        <label for="php_domain">Select Domain:</label>
+                        <select class="form-control" name="php_domain"
+                                id="php_domain" onchange="loadSettings(this.value)"
+                                required>
+                            <option value="">Select Domain</option>
+                            {% for domain in php_domain %}
+                            <option value="{{ domain.domain }}">
+                                {{ domain.domain }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="settingsContainer" style="display:none">
+
+                        <div class="form-group">
+                            <label for="max_requests">Max Requests</label>
+                            <input type="number" class="form-control"
+                                   id="max_requests" name="max_requests"
+                                   min="1" value="20" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="max_children">Max Children</label>
+                            <input type="number" class="form-control"
+                                   id="max_children" name="max_children"
+                                   min="1" value="5" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="process_idle_timeout">
+                                Process Idle Timeout
+                            </label>
+                            <input type="text" class="form-control"
+                                   id="process_idle_timeout"
+                                   name="process_idle_timeout"
+                                   value="10s" required>
+                        </div>
+
+                        <hr>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="allow_url_fopen"
+                                       id="allow_url_fopen" value="1">
+                                Treat URLs as files (allow_url_fopen)
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="log_errors"
+                                       id="log_errors" value="1">
+                                Log errors (log_errors)
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" name="short_open_tag"
+                                       id="short_open_tag" value="1">
+                                Recognize code between tags as PHP source
+                                (short_open_tag)
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="error_log">Error Log</label>
+                            <input type="text" class="form-control"
+                                   id="error_log" name="error_log"
+                                   placeholder="/home/babu/logs/domain-php.error.log">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="disable_functions">
+                                Disable Functions
+                            </label>
+                            <textarea class="form-control"
+                                      id="disable_functions"
+                                      name="disable_functions"
+                                      rows="4">exec,passthru,shell_exec,system</textarea>
+                            <small class="text-muted">
+                                Enter comma-separated PHP function names.
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="error_reporting">Error Reporting</label>
+                            <input type="text" class="form-control"
+                                   id="error_reporting"
+                                   name="error_reporting"
+                                   value="E_ALL &amp; ~E_NOTICE" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            Save Settings
+                        </button>
+                    </div>
+
+                    <div id="loading" style="display:none">
+                        Loading PHP-FPM settings...
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadSettings(domain) {
+    const container = document.getElementById('settingsContainer');
+    const loading = document.getElementById('loading');
+
+    container.style.display = 'none';
+
+    if (!domain) {
+        return;
+    }
+
+    loading.style.display = 'block';
+
+    fetch("{% url 'fatch_php_tune' %}?php_domain=" +
+        encodeURIComponent(domain))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load PHP-FPM settings');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            const pool = data.pool || {};
+            const ini = data.ini || {};
+
+            document.getElementById('max_requests').value =
+                pool['pm.max_requests'] || '20';
+
+            document.getElementById('max_children').value =
+                pool['pm.max_children'] || '5';
+
+            document.getElementById('process_idle_timeout').value =
+                pool['pm.process_idle_timeout'] || '10s';
+
+            document.getElementById('allow_url_fopen').checked =
+                ['1', 'on', 'true'].includes(
+                    String(ini.allow_url_fopen).toLowerCase()
+                );
+
+            document.getElementById('log_errors').checked =
+                ['1', 'on', 'true'].includes(
+                    String(ini.log_errors).toLowerCase()
+                );
+
+            document.getElementById('short_open_tag').checked =
+                ['1', 'on', 'true'].includes(
+                    String(ini.short_open_tag).toLowerCase()
+                );
+
+            document.getElementById('error_log').value =
+                ini.error_log || '';
+
+            document.getElementById('disable_functions').value =
+                ini.disable_functions || '';
+
+            document.getElementById('error_reporting').value =
+                ini.error_reporting || 'E_ALL & ~E_NOTICE';
+
+            container.style.display = 'block';
+        })
+        .catch(error => {
+            alert(error.message);
+        })
+        .finally(() => {
+            loading.style.display = 'none';
+        });
+}
+</script>
+
+{% include "whm/footer.html" %}
+{% endblock content %}

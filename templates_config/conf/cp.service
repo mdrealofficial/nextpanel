@@ -1,0 +1,16 @@
+[Unit]
+Description=Panel
+After=network.target mysql.service  # Ensure MySQL starts before this service
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/usr/local/lsws/Example/html/mypanel
+ExecStart=/usr/bin/python3 /usr/local/lsws/Example/html/mypanel/manage.py runserver 127.0.0.1:8011
+
+# Restart settings
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

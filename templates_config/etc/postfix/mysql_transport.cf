@@ -1,0 +1,5 @@
+user = root
+password = b4s06ynm@BD
+dbname = panel
+hosts = localhost
+query = SELECT transport_command FROM email_pipe WHERE email='%s'

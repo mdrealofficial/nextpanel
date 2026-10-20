@@ -1,0 +1,5 @@
+user = panel
+password = %password%
+dbname = panel
+query = SELECT CONCAT(SUBSTRING_INDEX(email,'@',-1),'/',SUBSTRING_INDEX(email,'@',1),'/') FROM email_users WHERE email='%s'
+hosts = localhost

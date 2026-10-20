@@ -1,0 +1,22 @@
+[Unit]
+Description=NextPanel Web Control Daemon
+After=network.target mysql.service mariadb.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/usr/local/nextpanel
+Environment="PATH=/root/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/root/venv/bin/gunicorn \
+    --workers 4 \
+    --bind 127.0.0.1:8088 \
+    --timeout 120 \
+    --access-logfile /var/log/nextpanel/access.log \
+    --error-logfile /var/log/nextpanel/error.log \
+    user_management.wsgi:application
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

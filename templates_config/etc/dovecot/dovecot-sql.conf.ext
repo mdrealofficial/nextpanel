@@ -1,0 +1,4 @@
+driver = mysql
+connect = host=localhost dbname=panel user=panel password=%password% port=3306
+password_query = SELECT email as user, password FROM email_users WHERE email='%u';
+user_query = SELECT '5000' as uid, '5000' as gid, mail FROM email_users WHERE email='%u';

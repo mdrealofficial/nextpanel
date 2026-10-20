@@ -1,0 +1,23 @@
+[Unit]
+Description=Panel
+After=network.target mysql.service  # Ensure MySQL starts before this service
+
+[Service]
+User=root
+Group=www-data
+WorkingDirectory=/usr/local/lsws/Example/html/mypanel
+ExecStart=/usr/bin/python3 /usr/local/lsws/Example/html/mypanel/manage.py runsslserver 0.0.0.0:8001 --cert /etc/letsencrypt/live/chandpurtelecom.xyz/cert.pem --key /etc/letsencrypt/live/chandpurtelecom.xyz/privkey.pem
+
+
+
+
+
+
+Restart=always
+RestartSec=10  # Wait 10 seconds before restarting on failure
+
+# Optionally, you can set the environment variables if needed
+Environment=PYTHONUNBUFFERED=1  # Useful for logging
+
+[Install]
+WantedBy=multi-user.target

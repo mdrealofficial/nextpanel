@@ -1,0 +1,368 @@
+{% extends "whm/base.html" %}
+{% load static %}
+
+{% block title %}Server Type{% endblock %}
+
+{% block content %}
+
+
+<div class="server-convert-container">
+
+    <div class="convert-header">
+        <div class="convert-icon">
+            <i class="mdi mdi-server"></i>
+        </div>
+        <div>
+            <h2>Server Type</h2>
+            <p>Convert existing domain and application configurations.</p>
+        </div>
+    </div>
+
+    <div class="convert-card">
+
+        <h3>Select Target Server</h3>
+        <p class="convert-description">
+            Choose the server type you want to configure. All existing
+            domains and applications will be processed.
+        </p>
+
+        <form id="convertForm">
+            {% csrf_token %}
+
+            <div class="server-options">
+
+               
+
+                <label class="server-option" for="serverOLS">
+                    <input
+    type="radio"
+    name="server_type"
+    id="serverOLS"
+    value="openlitespeed"
+    {% if SERVER_TYPE == 'openlitespeed' %}checked{% endif %}
+>
+                    <span class="server-option-content">
+                        <span class="server-option-icon ols-icon">
+                            <img src="/media/icon/openlitespeed.png" width="28px" height="28px" />
+                        </span>
+                        <span class="server-option-text">
+                            <strong>OpenLiteSpeed</strong>
+                            <small>Configurations to OpenLiteSpeed.</small>
+                        </span>
+                    </span>
+                </label>
+				
+				 <label class="server-option" for="serverApache">
+                    <input
+    type="radio"
+    name="server_type"
+    id="serverApache"
+    value="apache"
+    {% if SERVER_TYPE == 'apache' %}checked{% endif %}
+>
+                    <span class="server-option-content">
+                        <span class="server-option-icon apache-icon">
+                             <img src="/media/icon/Apache.png" width="28px" height="28px" />
+                        </span>
+                        <span class="server-option-text">
+                            <strong>Apache</strong>
+                            <small>Configurations to Apache HTTP Server.</small>
+                        </span>
+                    </span>
+                </label>
+
+            </div>
+
+            <div class="convert-warning">
+                <i class="mdi mdi-alert-triangle"></i>
+                <span>
+                    This operation modifies server configuration files.
+                    Verify that the selected server is installed and configured
+                    before proceeding.
+                </span>
+            </div>
+
+            <button type="submit" id="convertBtn" class="convert-button">
+                <i class="mdi mdi-refresh"></i>
+                <span>Start switch </span>
+            </button>
+        </form>
+
+    </div>
+
+    <div id="resultCard" class="convert-card result-card" hidden>
+        <div class="result-header">
+            <h3>switching  Results</h3>
+            <span id="resultStatus" class="result-status">Running</span>
+        </div>
+
+        <div class="result-stats">
+            <div class="result-stat">
+                <span>Total Domains</span>
+                <strong id="domainTotal">-</strong>
+            </div>
+            <div class="result-stat">
+                <span>Total Apps</span>
+                <strong id="appTotal">-</strong>
+            </div>
+        </div>
+
+        <div id="terminal" class="convert-terminal" aria-live="polite"></div>
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("convertForm");
+    const button = document.getElementById("convertBtn");
+    const buttonText = button.querySelector("span");
+
+    // Current active server from Django.
+    const currentServer = "{{ SERVER_TYPE|lower|escapejs }}" === "ols"
+        ? "openlitespeed"
+        : "{{ SERVER_TYPE|lower|escapejs }}";
+
+    function updateConvertButton() {
+        const selected = form.querySelector(
+            'input[name="server_type"]:checked'
+        );
+
+        if (!selected) return;
+
+        const sameServer = selected.value === currentServer;
+
+        button.disabled = sameServer;
+        button.classList.toggle("is-disabled", sameServer);
+
+        buttonText.textContent = sameServer
+            ? "Already running"
+            : "Start switch";
+    }
+
+    form.querySelectorAll('input[name="server_type"]').forEach(function (radio) {
+        radio.addEventListener("change", updateConvertButton);
+    });
+
+    updateConvertButton();
+
+    // Keep your existing form submit / SSE streaming handler here.
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("convertForm");
+    const button = document.getElementById("convertBtn");
+    const resultCard = document.getElementById("resultCard");
+    const terminal = document.getElementById("terminal");
+    const resultStatus = document.getElementById("resultStatus");
+    const domainTotal = document.getElementById("domainTotal");
+    const appTotal = document.getElementById("appTotal");
+
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (button.disabled) return;
+
+        const selectedServer = form.querySelector(
+            'input[name="server_type"]:checked'
+        );
+
+        if (!selectedServer) {
+            window.alert("Please select a server type.");
+            return;
+        }
+
+        const serverType = selectedServer.value;
+        const serverName = serverType === "apache"
+            ? "Apache"
+            : "OpenLiteSpeed";
+
+        if (!window.confirm(`Start conversion to ${serverName}?`)) {
+            return;
+        }
+
+        button.disabled = true;
+        button.classList.add("is-loading");
+
+        const buttonText = button.querySelector("span");
+        if (buttonText) {
+            buttonText.textContent = "Converting...";
+        }
+
+        resultCard.hidden = false;
+        resultStatus.textContent = "Running";
+        resultStatus.className = "result-status status-running";
+        terminal.textContent = "Starting Server Type...\n";
+        domainTotal.textContent = "-";
+        appTotal.textContent = "-";
+
+        let completedSuccessfully = false;
+        let receivedDone = false;
+
+        function appendLog(message) {
+            terminal.textContent += message + "\n";
+            terminal.scrollTop = terminal.scrollHeight;
+
+            const domainMatch = message.match(
+                /Domains processed:\s*(\d+)/i
+            );
+            const appMatch = message.match(
+                /Apps processed:\s*(\d+)/i
+            );
+
+            if (domainMatch) {
+                domainTotal.textContent = domainMatch[1];
+            }
+
+            if (appMatch) {
+                appTotal.textContent = appMatch[1];
+            }
+
+            if (message.startsWith("SUCCESS:")) {
+                completedSuccessfully = true;
+            }
+
+            if (message.startsWith("ERROR:")) {
+                completedSuccessfully = false;
+            }
+        }
+
+        try {
+            const csrfInput = form.querySelector(
+                '[name="csrfmiddlewaretoken"]'
+            );
+
+            if (!csrfInput) {
+                throw new Error("CSRF token was not found.");
+            }
+
+            const response = await fetch(
+                "{% url 'switch_server_action' %}",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded",
+                        "X-CSRFToken": csrfInput.value,
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "text/event-stream"
+                    },
+                    body: new URLSearchParams({
+                        server_type: serverType
+                    })
+                }
+            );
+
+            if (!response.ok) {
+                const contentType =
+                    response.headers.get("content-type") || "";
+
+                let errorMessage =
+                    `Request failed with HTTP ${response.status}.`;
+
+                if (contentType.includes("application/json")) {
+                    const data = await response.json();
+                    errorMessage = data.message || errorMessage;
+                } else {
+                    const text = await response.text();
+                    if (text.trim()) {
+                        errorMessage = text;
+                    }
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            if (!response.body) {
+                throw new Error(
+                    "Streaming is not supported by this response."
+                );
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            function processEvent(eventText) {
+                const dataLines = eventText
+                    .split("\n")
+                    .filter(line => line.startsWith("data: "))
+                    .map(line => line.slice(6));
+
+                if (!dataLines.length) return;
+
+                const message = dataLines.join("\n");
+
+                if (message === "[DONE]") {
+                    receivedDone = true;
+                    return;
+                }
+
+                appendLog(message);
+            }
+
+            while (true) {
+                const { value, done } = await reader.read();
+
+                if (value) {
+                    buffer += decoder.decode(value, { stream: !done });
+                } else if (done) {
+                    buffer += decoder.decode();
+                }
+
+                // Support both LF and CRLF SSE event separators.
+                buffer = buffer.replace(/\r\n/g, "\n");
+
+                const events = buffer.split("\n\n");
+                buffer = events.pop() || "";
+
+                for (const eventText of events) {
+                    processEvent(eventText);
+                }
+
+                if (done) break;
+            }
+
+            // Process any final event without a trailing blank line.
+            if (buffer.trim()) {
+                processEvent(buffer);
+            }
+
+            if (!receivedDone) {
+                appendLog(
+                    "ERROR: The server stream ended before completion was confirmed."
+                );
+                completedSuccessfully = false;
+            }
+
+            resultStatus.textContent = completedSuccessfully
+                ? "Completed"
+                : "Failed";
+
+            resultStatus.className = completedSuccessfully
+                ? "result-status status-success"
+                : "result-status status-error";
+
+        } catch (error) {
+            appendLog("ERROR: " + error.message);
+
+            resultStatus.textContent = "Failed";
+            resultStatus.className = "result-status status-error";
+
+        } finally {
+            button.disabled = false;
+            button.classList.remove("is-loading");
+
+            if (buttonText) {
+                buttonText.textContent = "Start Conversion";
+            }
+        }
+    });
+});
+</script>
+
+
+{% endblock %}
