@@ -100,7 +100,90 @@ if [ ! -f "$ETC_DIR/ssl/cert.pem" ]; then
     chmod 644 "$ETC_DIR/ssl/cert.pem"
 fi
 
-echo "[6/6] Configuring System Services, Nginx Proxy & CLI..."
+echo "[6/8] Installing OpenLiteSpeed, DNS, Mail, FTP, and DKIM services..."
+if [ -f /etc/debian_version ]; then
+    wget -O - https://repo.litespeed.sh | bash || true
+    apt-get install -y openlitespeed || true
+
+    echo "postfix postfix/mailname string example.com" | debconf-set-selections
+    echo "postfix postfix/main_mailer_type string \"Internet Site\"" | debconf-set-selections
+    apt-get install -y postfix postfix-mysql dovecot-core dovecot-imapd dovecot-pop3d \
+        dovecot-lmtpd dovecot-mysql pure-ftpd-mysql opendkim opendkim-tools \
+        pdns-server pdns-backend-mysql || true
+fi
+
+echo "[7/8] Configuring hosting services, permissions and SSL..."
+# Setup vmail user & dirs
+if ! grep -q "^vmail:" /etc/group; then
+    groupadd -g 5000 vmail 2>/dev/null || true
+fi
+if ! id -u vmail &>/dev/null; then
+    useradd -g vmail -u 5000 -d /var/mail -s /sbin/nologin vmail 2>/dev/null || true
+fi
+mkdir -p /var/mail/vhosts /home/vmail
+chown -R vmail:vmail /var/mail/vhosts /home/vmail 2>/dev/null || true
+chmod -R 770 /var/mail 2>/dev/null || true
+chmod -R 700 /home/vmail 2>/dev/null || true
+
+# Grant database privileges to panel user
+mysql -u root -p"$DB_PASSWORD" -e "
+CREATE USER IF NOT EXISTS 'panel'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+ALTER USER 'panel'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
+GRANT ALL PRIVILEGES ON *.* TO 'panel'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+" || true
+
+# Deploy service templates with database password substitution
+if [ -d "$SCRIPT_DIR/templates_config/etc" ]; then
+    rsync -av "$SCRIPT_DIR/templates_config/etc/" /etc/
+    find /etc/postfix /etc/dovecot /etc/powerdns /etc/pure-ftpd -type f -exec sed -i "s/%password%/$DB_PASSWORD/g" {} + 2>/dev/null || true
+fi
+
+# Postfix config permissions & maps
+chown root:postfix /etc/postfix/mysql-*.cf /etc/postfix/mysql_transport.cf 2>/dev/null || true
+chmod 640 /etc/postfix/mysql-*.cf /etc/postfix/mysql_transport.cf 2>/dev/null || true
+chown root:postfix /etc/postfix/main.cf /etc/postfix/master.cf 2>/dev/null || true
+chmod 644 /etc/postfix/main.cf /etc/postfix/master.cf 2>/dev/null || true
+postmap /etc/postfix/vmail_ssl.map 2>/dev/null || true
+postmap /etc/postfix/script_filter 2>/dev/null || true
+
+# Dovecot SSL
+if [ ! -f /etc/dovecot/cert.pem ]; then
+    mkdir -p /etc/dovecot
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout /etc/dovecot/key.pem -out /etc/dovecot/cert.pem -subj "/CN=localhost"
+    chmod 600 /etc/dovecot/key.pem
+    chmod 644 /etc/dovecot/cert.pem
+fi
+
+# Pure-FTPd SSL & Passive config
+mkdir -p /etc/ssl/private /etc/pure-ftpd/conf
+if [ ! -f /etc/ssl/private/pure-ftpd.pem ]; then
+    openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -subj "/CN=localhost" \
+        -keyout /etc/ssl/private/pure-ftpd.pem -out /etc/ssl/private/pure-ftpd.pem
+    chmod 600 /etc/ssl/private/pure-ftpd.pem
+fi
+PUBLIC_IP=$(curl -m 5 -s ifconfig.me || hostname -I | awk '{print $1}')
+echo "$PUBLIC_IP" > /etc/pure-ftpd/conf/ForcePassiveIP
+echo "yes" > /etc/pure-ftpd/conf/NoAnonymous
+echo "40110 40210" > /etc/pure-ftpd/conf/PassivePortRange
+
+# OpenDKIM setup
+mkdir -p /etc/opendkim
+touch /etc/opendkim/key.table /etc/opendkim/signing.table /etc/opendkim/TrustedHosts.table
+
+# PowerDNS config & resolve port release
+systemctl stop systemd-resolved 2>/dev/null || true
+systemctl disable systemd-resolved 2>/dev/null || true
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+chown pdns:pdns /etc/powerdns/pdns.conf 2>/dev/null || true
+chmod 640 /etc/powerdns/pdns.conf 2>/dev/null || true
+
+# Enable and start hosting services
+systemctl enable lshttpd pdns postfix dovecot pure-ftpd-mysql opendkim 2>/dev/null || true
+systemctl restart lshttpd pdns postfix dovecot pure-ftpd-mysql opendkim 2>/dev/null || true
+
+echo "[8/8] Configuring NextPanel System Service, Nginx Proxy & CLI..."
 cp "$SCRIPT_DIR/templates_config/nextpanel.service" /etc/systemd/system/nextpanel.service
 cp "$SCRIPT_DIR/templates_config/nextpanel_nginx.conf" /etc/nginx/conf.d/nextpanel.conf 2>/dev/null || \
 cp "$SCRIPT_DIR/templates_config/nextpanel_nginx.conf" /etc/nginx/sites-enabled/nextpanel 2>/dev/null || true
@@ -113,8 +196,6 @@ systemctl enable nextpanel
 systemctl restart nextpanel
 systemctl enable nginx
 systemctl restart nginx
-
-PUBLIC_IP=$(curl -m 5 -s ifconfig.me || hostname -I | awk '{print $1}')
 
 echo ""
 echo -e "\033[1;32m=================================================================\033[0m"
