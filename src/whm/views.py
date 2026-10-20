@@ -50,82 +50,129 @@ logger = CpLogger()
 
 @alogin_required
 def home(request):
-    
-    ols_version = get_openlitespeed_version()
+    try:
+        ols_version = get_openlitespeed_version()
+    except Exception:
+        ols_version = "Unknown"
+
     os_f = f"{getattr(settings, 'MY_OS_NAME', 'linux').capitalize()} {getattr(settings, 'MY_OS_VERSION', '0')}"
-    load_avg = os.getloadavg()  # Retu
-    load_avg_1 = round_to_two_decimals(load_avg[0])  # 1-minute load average
-    load_avg_5 = round_to_two_decimals(load_avg[1])  # 5-minute load average
-    load_avg_15 = round_to_two_decimals(load_avg[2]) 
-    loadavg=f"{load_avg_1} {load_avg_5} {load_avg_15}"
-    server_ip = get_server_ip()
-    server_time = get_server_time()
-    timezone = get_current_timezone()
-    timenow=f"{server_time} ({timezone})"
-    uptime = get_server_uptime()
-    total_domain = Domain.objects.count()
-    total_pkg = Package.objects.count()
-    total_user = total_users
-    total_dbx=total_db()
-    hostname=get_hostname()
-    SERVER_TYPE = get_server_type().capitalize()
-    current_version = getattr(settings, "VERSION", "0.0.0")
-    update_file_path = os.path.join(settings.BASE_DIR, 'etc', 'update')
-    if os.path.exists(update_file_path):
-        with open(update_file_path, "r") as f:
-            latest_version = f.read().strip()
-        if version_tuple(latest_version) > version_tuple(current_version):
-            update_available=True
-        else:
-            update_available=False
-            
-    else:
-        latest_version=current_version
-        update_available=False        
-            
-    modules = scan_module_templates("admin_home_top.html")           
-    users_plugin = get_users_plugins_list()
-    database_plugin = get_database_plugins_list()
-    domain_plugin = get_domain_plugins_list()
-    file_plugin = get_file_plugins_list()
-    security_plugin = get_security_plugins_list()
-    service_plugin = get_server_plugins_list()
-    email_plugin = get_email_plugins_list()
-    php_plugin = get_php_plugins_list()
-    node_plugin = get_node_plugins_list()
-    advance_plugin = get_advance_plugins_list()
-    configuration_plugin = get_configuration_plugins_list()
-    account_plugin = get_account_plugins_list()
-     
-    return render(request, 'whm/index.html',{'osz': os_f,
-    'load': load_avg,
-    'lite': ols_version,
-    'ip': server_ip,
-    'time': timenow,
-    'uptime': uptime,
-    'total_user': total_user,
-    'total_domain': total_domain,
-    'total_db': total_dbx,
-    'total_pkg': total_pkg,
-    'host_name': hostname,
-    "update_available": update_available,
-    "current_version": current_version,
-    "latest_version": latest_version,
-    'users_plugin': users_plugin,
-    'database_plugin': database_plugin,
-    'domain_plugin': domain_plugin,
-    'file_plugin': file_plugin,
-    'security_plugin': security_plugin,
-    'service_plugin': service_plugin,
-    'email_plugin': email_plugin,
-    'php_plugin': php_plugin,
-    'node_plugin': node_plugin,
-    'advance_plugin': advance_plugin,
-    'configuration_plugin': configuration_plugin,
-    'account_plugin': account_plugin,
-    'modules': modules,
-    'server_type': SERVER_TYPE
     
+    try:
+        load_avg = os.getloadavg()
+        load_avg_1 = round_to_two_decimals(load_avg[0])
+        load_avg_5 = round_to_two_decimals(load_avg[1])
+        load_avg_15 = round_to_two_decimals(load_avg[2])
+    except Exception:
+        load_avg = (0.0, 0.0, 0.0)
+        load_avg_1 = load_avg_5 = load_avg_15 = 0.0
+
+    loadavg = f"{load_avg_1} {load_avg_5} {load_avg_15}"
+    
+    try:
+        server_ip = get_server_ip()
+    except Exception:
+        server_ip = request.META.get('SERVER_NAME', '127.0.0.1')
+        
+    try:
+        server_time = get_server_time()
+        timezone = get_current_timezone()
+    except Exception:
+        server_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timezone = "UTC"
+
+    timenow = f"{server_time} ({timezone})"
+    
+    try:
+        uptime = get_server_uptime()
+    except Exception:
+        uptime = "Up"
+
+    try:
+        total_domain = Domain.objects.count()
+    except Exception:
+        total_domain = 0
+
+    try:
+        total_pkg = Package.objects.count()
+    except Exception:
+        total_pkg = 0
+
+    try:
+        total_user = total_users()
+    except Exception:
+        total_user = 0
+
+    try:
+        total_dbx = total_db()
+    except Exception:
+        total_dbx = 0
+
+    try:
+        hostname = get_hostname()
+    except Exception:
+        hostname = socket.gethostname()
+
+    try:
+        SERVER_TYPE = get_server_type().capitalize()
+    except Exception:
+        SERVER_TYPE = "Openlitespeed"
+
+    current_version = getattr(settings, "VERSION", "1.0.0")
+    latest_version = current_version
+    update_available = False
+
+    try:
+        modules = scan_module_templates("admin_home_top.html")
+    except Exception:
+        modules = []
+
+    try:
+        users_plugin = get_users_plugins_list()
+        database_plugin = get_database_plugins_list()
+        domain_plugin = get_domain_plugins_list()
+        file_plugin = get_file_plugins_list()
+        security_plugin = get_security_plugins_list()
+        service_plugin = get_server_plugins_list()
+        email_plugin = get_email_plugins_list()
+        php_plugin = get_php_plugins_list()
+        node_plugin = get_node_plugins_list()
+        advance_plugin = get_advance_plugins_list()
+        configuration_plugin = get_configuration_plugins_list()
+        account_plugin = get_account_plugins_list()
+    except Exception:
+        users_plugin = database_plugin = domain_plugin = file_plugin = []
+        security_plugin = service_plugin = email_plugin = php_plugin = []
+        node_plugin = advance_plugin = configuration_plugin = account_plugin = []
+
+    return render(request, 'whm/index.html', {
+        'osz': os_f,
+        'load': load_avg,
+        'lite': ols_version,
+        'ip': server_ip,
+        'time': timenow,
+        'uptime': uptime,
+        'total_user': total_user,
+        'total_domain': total_domain,
+        'total_db': total_dbx,
+        'total_pkg': total_pkg,
+        'host_name': hostname,
+        "update_available": update_available,
+        "current_version": current_version,
+        "latest_version": latest_version,
+        'users_plugin': users_plugin,
+        'database_plugin': database_plugin,
+        'domain_plugin': domain_plugin,
+        'file_plugin': file_plugin,
+        'security_plugin': security_plugin,
+        'service_plugin': service_plugin,
+        'email_plugin': email_plugin,
+        'php_plugin': php_plugin,
+        'node_plugin': node_plugin,
+        'advance_plugin': advance_plugin,
+        'configuration_plugin': configuration_plugin,
+        'account_plugin': account_plugin,
+        'modules': modules,
+        'server_type': SERVER_TYPE
     })
  
 @alogin_required

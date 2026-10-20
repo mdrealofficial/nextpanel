@@ -194,7 +194,8 @@ def handler404(request, exception):
 def handler500(request):
     context = {}
     response = render(request, "users/500.html", context=context)
-    response.status_code
+    response.status_code = 500
+    return response
     
 def handler403(request, exception=None):
     context = {}
