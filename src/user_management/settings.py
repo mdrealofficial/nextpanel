@@ -220,9 +220,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # If you want to enforce HTTPS in your Django application
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-VERSION = get_db_password('etc/version')
-MY_OS_NAME = get_db_password('etc/osName')
-MY_OS_VERSION = get_db_password('etc/osVersion')
+VERSION = get_db_password('etc/version') or '1.0.0'
+MY_OS_NAME = get_db_password('etc/osName') or 'ubuntu'
+MY_OS_VERSION = get_db_password('etc/osVersion') or '24.04'
 
 # ---- SESSION SETTINGS ----
 SESSION_COOKIE_NAME = "sessionid" 

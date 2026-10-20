@@ -55,7 +55,9 @@ def home(request):
     except Exception:
         ols_version = "Unknown"
 
-    os_f = f"{getattr(settings, 'MY_OS_NAME', 'linux').capitalize()} {getattr(settings, 'MY_OS_VERSION', '0')}"
+    os_name = str(getattr(settings, 'MY_OS_NAME', 'linux') or 'linux').capitalize()
+    os_ver = str(getattr(settings, 'MY_OS_VERSION', '0') or '0')
+    os_f = f"{os_name} {os_ver}"
     
     try:
         load_avg = os.getloadavg()
