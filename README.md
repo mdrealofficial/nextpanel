@@ -25,18 +25,29 @@
 
 ## 📥 Installation
 
-On a clean server, run:
+Run the following command as `root` on your clean Linux server:
+
+### Option 1: Quick Install via Git
 
 ```bash
-git clone <your-repo-url> nextpanel
-cd nextpanel
-sudo bash install.sh
+git clone https://github.com/mdrealofficial/nextpanel.git /usr/local/nextpanel-setup
+cd /usr/local/nextpanel-setup
+bash install.sh
+```
+
+*(If prompted for credentials because the repo is currently private, enter your GitHub username and Personal Access Token, or make the repository public in GitHub Settings).*
+
+### Option 2: One-Liner (Once Public / Download Token)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mdrealofficial/nextpanel/main/install.sh | bash
 ```
 
 Once installation finishes, your panel will be live at:
 ```
 https://<YOUR_SERVER_IP>:8443
 ```
+Login with the root database credentials displayed at the end of the installation.
 
 ---
 
