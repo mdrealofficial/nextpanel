@@ -64,6 +64,13 @@ case "$1" in
             echo "Current port: $PORT"
         fi
         ;;
+    password)
+        if [ -n "$2" ]; then
+            /root/venv/bin/python /usr/local/nextpanel/manage.py shell -c "from django.contrib.auth.models import User; u = User.objects.get(username='admin'); u.set_password('$2'); u.save(); print('Password updated successfully!')"
+        else
+            echo "Usage: nextpanel password <new-password>"
+        fi
+        ;;
     info|*)
         show_banner
         ;;
