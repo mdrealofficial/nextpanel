@@ -34,10 +34,11 @@ if [ -f /etc/debian_version ]; then
     apt-get update -qq
     apt-get install -y -qq git python3 python3-venv python3-pip python3-dev \
         libmysqlclient-dev pkg-config nginx mariadb-server curl wget unzip \
-        openssl libssl-dev sudo
+        openssl libssl-dev libjpeg-dev zlib1g-dev libffi-dev sudo build-essential
 elif [ -f /etc/redhat-release ]; then
     dnf update -y -q
-    dnf install -y -q git python3 python3-devel gcc mariadb-server nginx curl wget unzip openssl
+    dnf install -y -q git python3 python3-devel gcc gcc-c++ mariadb-server nginx curl wget unzip openssl \
+        openssl-devel libjpeg-turbo-devel zlib-devel libffi-devel
 fi
 
 # If piped via curl | bash, clone repository to temporary setup directory
