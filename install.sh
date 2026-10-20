@@ -32,12 +32,21 @@ echo "[1/6] Installing core system packages & OpenLiteSpeed repositories..."
 if [ -f /etc/debian_version ]; then
     export DEBIAN_FRONTEND=noninteractive
     apt-get update -qq
-    apt-get install -y -qq python3 python3-venv python3-pip python3-dev \
+    apt-get install -y -qq git python3 python3-venv python3-pip python3-dev \
         libmysqlclient-dev pkg-config nginx mariadb-server curl wget unzip \
         openssl libssl-dev sudo
 elif [ -f /etc/redhat-release ]; then
     dnf update -y -q
-    dnf install -y -q python3 python3-devel gcc mariadb-server nginx curl wget unzip openssl
+    dnf install -y -q git python3 python3-devel gcc mariadb-server nginx curl wget unzip openssl
+fi
+
+# If piped via curl | bash, clone repository to temporary setup directory
+if [ ! -d "$SCRIPT_DIR/src" ]; then
+    echo "Cloning NextPanel source repository..."
+    TEMP_SETUP_DIR="/tmp/nextpanel-setup-$$"
+    rm -rf "$TEMP_SETUP_DIR"
+    git clone https://github.com/mdrealofficial/nextpanel.git "$TEMP_SETUP_DIR"
+    SCRIPT_DIR="$TEMP_SETUP_DIR"
 fi
 
 echo "[2/6] Setting up NextPanel system directories & logging..."
